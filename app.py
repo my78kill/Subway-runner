@@ -1,4 +1,5 @@
 import os
+import asyncio
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -8,9 +9,12 @@ GAME_URL = "https://subwaysurfers-f1g7.onrender.com"
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def home():
     return "Bot is running!"
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🎮 Use /playsubway to play Subway Runner")
 
 async def playsubway(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -23,16 +27,17 @@ async def playsubway(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Use /playsubway to play 🎮")
+async def run_bot():
+    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
-def run_bot():
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("playsubway", playsubway))
-    application.run_polling()
+    app_bot.add_handler(CommandHandler("start", start))
+    app_bot.add_handler(CommandHandler("playsubway", playsubway))
+
+    await app_bot.initialize()
+    await app_bot.start()
+    await app_bot.updater.start_polling()
 
 if __name__ == "__main__":
-    from threading import Thread
-    Thread(target=run_bot).start()
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
